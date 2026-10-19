@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="my">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panel</title>
+    <style>
+        body { font-family: sans-serif; padding: 15px; background: #f4f4f4; }
+        input, select, button { width: 100%; padding: 10px; margin: 5px 0 15px; box-sizing: border-box; border-radius: 5px; border: 1px solid #ccc; }
+        button { background: #ff0050; color: white; border: none; font-weight: bold; cursor: pointer; }
+        .box { background: white; padding: 20px; border-radius: 10px; margin-bottom: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        h3 { margin-top: 0; color: #333; }
+    </style>
+</head>
+<body>
+
+    <h2>Admin Panel</h2>
+
+    <!-- ⚠️ မင်းရဲ့ Worker URL ကို ဒီမှာ ထည့်ပါ -->
+    <script>const API_URL = "https://YOUR_WORKER_URL.workers.dev";</script>
+
+    <!-- ၁။ Category အသစ်ထည့်ရန် -->
+    <div class="box">
+        <h3>Category (အမျိုးအစား) အသစ်ထည့်ရန်</h3>
+        <input type="text" id="catName" placeholder="အမျိုးအစား နာမည် (ဥပမာ- Action)">
+        <input type="text" id="catImage" placeholder="ပုံ Link (URL)">
+        <button onclick="addCategory()">Category သိမ်းမယ်</button>
+    </div>
+
+    <!-- ၂။ မော်ဒယ် အသစ်ထည့်ရန် -->
+    <div class="box">
+        <h3>မော်ဒယ် အသစ်ထည့်ရန်</h3>
+        <input type="text" id="modelName" placeholder="မော်ဒယ် နာမည်">
+        <input type="text" id="modelImage" placeholder="ပုံ Link (URL)">
+        <select id="modelVip">
+            <option value="0">အခမဲ့ (Free)</option>
+            <option value="1">VIP</option>
+        </select>
+        <button onclick="addModel()">မော်ဒယ် သိမ်းမယ်</button>
+    </div>
+
+    <!-- ၃။ ဇာတ်ကား အသစ်ထည့်ရန် -->
+    <div class="box">
+        <h3>ဇာတ်ကား အသစ်ထည့်ရန်</h3>
+        <input type="text" id="videoTitle" placeholder="ဇာတ်ကား နာမည်">
+        <input type="text" id="videoThumb" placeholder="Link (Thumbnail)">
+        <input type="text" id="videoFileId" placeholder="Telegram File ID">
+        
+        <!-- Category Dropdown -->
+        <select id="videoCat">
+            <option value="">Category ရွေးပါ...</option>
+        </select>
+        
+        <input type="text" id="videoModels" placeholder="ပါဝင်တဲ့ မော်ဒယ် ID များ (ဥပမာ- 1,2,3)">
+        
+        <button onclick="addVideo()">ဇာတ်ကား သိမ်းမယ်</button>
+    </div>
+
+    <script>
+        // Category တွေကို Dropdown ထဲ ဆွဲထည့်တာ
+        async function loadCategories() {
+            try {
+                const res = await fetch(`${API_URL}/api/categories`);
+                const cats = await res.json();
+                const select = document.getElementById('videoCat');
+                select.innerHTML = '<option value="">Category ရွေးပါ...</option>';
+                cats.forEach(c => {
+                    select.innerHTML += `<option value="${c.id}">${c.name} (ID: ${c.id})</option>`;
+                });
+            } catch(e) {
+                console.log("Category ဆွဲမရပါ", e);
+            }
+        }
+
+        // ၁။ Category သိမ်းတာ
+        async function addCategory() {
+            const name = document.getElementById('catName').value;
+            const image = document.getElementById('catImage').value;
+
+            const res = await fetch(`${API_URL}/api/admin/add-category`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ name, image })
+            });
+            
+            if(res.ok) {
+                alert("Category သိမ်းပြီးပါပြီ");
+                loadCategories(); // Dropdown ကို update လုပ်မယ်
+            } else {
+                alert("Error တက်နေပါတယ်");
+            }
+        }
+
+        // ၂။ မော်ဒယ် သိမ်းတာ
+        async function addModel() {
+            const name = document.getElementById('modelName').value;
+            const image = document.getElementById('modelImage').value;
+            const is_vip = document.getElementById('modelVip').value;
+
+            const res = await fetch(`${API_URL}/api/admin/add-model`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ name, image, is_vip })
+            });
+            alert(res.ok ? "မော်ဒယ် သိမ်းပြီးပါပြီ" : "Error တက်နေပါတယ်");
+        }
+
+        // ၃။ ဇာတ်ကား သိမ်းတာ
+        async function addVideo() {
+            const title = document.getElementById('videoTitle').value;
+            const preview_url = document.getElementById('videoThumb').value;
+            const file_id = document.getElementById('videoFileId').value;
+            const category_id = document.getElementById('videoCat').value;
+            const model_ids = document.getElementById('videoModels').value.split(',').map(id => parseInt(id.trim()));
+
+            const res = await fetch(`${API_URL}/api/admin/add-video`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ title, thumbnail, file_id, category_id, model_ids })
+            });
+            alert(res.ok ? "ဇာတ်ကား သိမ်းပြီးပါပြီ" : "Error တက်နေပါတယ်");
+        }
+
+        // စာမျက်နှာ စတင်တာနဲ့ Category တွေ ဆွဲထုတ်မယ်
+        loadCategories();
+    </script>
+</body>
+</html>
