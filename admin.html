@@ -5,37 +5,39 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Panel</title>
     <style>
-        body { font-family: sans-serif; padding: 15px; background: #f4f4f4; }
-        input, select, button { width: 100%; padding: 10px; margin: 5px 0 15px; box-sizing: border-box; border-radius: 5px; border: 1px solid #ccc; }
+        body { font-family: sans-serif; padding: 15px; background: #121212; color: white; }
+        input, select, button { width: 100%; padding: 12px; margin: 5px 0 15px; box-sizing: border-box; border-radius: 5px; border: 1px solid #444; background: #1e1e1e; color: white; }
         button { background: #ff0050; color: white; border: none; font-weight: bold; cursor: pointer; }
-        .box { background: white; padding: 20px; border-radius: 10px; margin-bottom: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-        h3 { margin-top: 0; color: #333; }
+        .box { background: #1e1e1e; padding: 20px; border-radius: 10px; margin-bottom: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.5); }
+        h3 { margin-top: 0; color: #ff0050; }
+        
+        /* စာရိုက်ရှာတဲ့ Box နဲ့ Checkbox တွေအတွက် Design */
+        .search-box { width: 100%; padding: 8px; margin-bottom: 10px; border-radius: 5px; border: 1px solid #ff0050; background: #222; color: white; }
+        .checkbox-container { display: flex; flex-wrap: wrap; gap: 10px; max-height: 150px; overflow-y: auto; background: #111; padding: 10px; border-radius: 5px; margin-bottom: 15px; }
+        .checkbox-item { display: flex; align-items: center; gap: 5px; width: 45%; font-size: 14px; }
+        .checkbox-item input { width: auto; margin: 0; }
     </style>
 </head>
 <body>
 
     <h2>Admin Panel</h2>
-
     <!-- ⚠️ မင်းရဲ့ Worker URL ကို ဒီမှာ ထည့်ပါ -->
     <script>const API_URL = "https://myhubapp.dathalay1.workers.dev";</script>
 
     <!-- ၁။ Category အသစ်ထည့်ရန် -->
     <div class="box">
-        <h3>Category (အမျိုးအစား) အသစ်ထည့်ရန်</h3>
-        <input type="text" id="catName" placeholder="အမျိုးအစား နာမည် (ဥပမာ- Action)">
+        <h3>Category အသစ်ထည့်ရန်</h3>
+        <input type="text" id="catName" placeholder="အမျိုးအစား နာမည်">
         <input type="text" id="catImage" placeholder="ပုံ Link (URL)">
         <button onclick="addCategory()">Category သိမ်းမယ်</button>
     </div>
 
-    <!-- ၂။ မော်ဒယ် အသစ်ထည့်ရန် -->
+    <!-- ၂။ မော်ဒယ် အသစ်ထည့်ရန် (VIP ရွေးတာ ဖျက်ထားပါတယ်) -->
     <div class="box">
         <h3>မော်ဒယ် အသစ်ထည့်ရန်</h3>
         <input type="text" id="modelName" placeholder="မော်ဒယ် နာမည်">
         <input type="text" id="modelImage" placeholder="ပုံ Link (URL)">
-        <select id="modelVip">
-            <option value="0">အခမဲ့ (Free)</option>
-            <option value="1">VIP</option>
-        </select>
+        <!-- <select id="modelVip"> ... ဖျက်လိုက်ပါပြီ ... </select> -->
         <button onclick="addModel()">မော်ဒယ် သိမ်းမယ်</button>
     </div>
 
@@ -43,32 +45,78 @@
     <div class="box">
         <h3>ဇာတ်ကား အသစ်ထည့်ရန်</h3>
         <input type="text" id="videoTitle" placeholder="ဇာတ်ကား နာမည်">
-        <input type="text" id="videoThumb" placeholder="Link (Thumbnail)">
+        <input type="text" id="videoThumb" placeholder="Preview MP4 URL">
         <input type="text" id="videoFileId" placeholder="Telegram File ID">
         
-        <!-- Category Dropdown -->
-        <select id="videoCat">
-            <option value="">Category ရွေးပါ...</option>
+        <!-- 🔴 ဇာတ်ကား VIP/Free ရွေးတဲ့နေရာ (ဒါကို အသစ်ထည့်ထားပါတယ်) -->
+        <label style="display: block; font-weight: bold; color: #ff0050;">အမျိုးအစား (VIP / Free)</label>
+        <select id="videoVip" style="width: 100%; padding: 12px; margin: 5px 0 15px; border-radius: 5px; border: 1px solid #444; background: #1e1e1e; color: white;">
+            <option value="0">အခမဲ့ (Free)</option>
+            <option value="1">VIP (ရွှေရောင်)</option>
         </select>
+
+        <!-- Category ရွေးတဲ့နေရာ (Search ပါ) -->
+        <label style="font-weight:bold; font-size:14px;">Category ရွေးပါ</label>
+        <input type="text" class="search-box" id="searchCat" onkeyup="filterCheckboxes('searchCat', 'cat-list')" placeholder="Category နာမည် ရိုက်ရှာပါ...">
+        <div id="cat-list" class="checkbox-container"></div>
         
-        <input type="text" id="videoModels" placeholder="ပါဝင်တဲ့ မော်ဒယ် ID များ (ဥပမာ- 1,2,3)">
+        <!-- Model ရွေးတဲ့နေရာ (Search ပါ) -->
+        <label style="font-weight:bold; font-size:14px;">မော်ဒယ် ရွေးပါ</label>
+        <input type="text" class="search-box" id="searchModel" onkeyup="filterCheckboxes('searchModel', 'model-list')" placeholder="မော်ဒယ် နာမည် ရိုက်ရှာပါ...">
+        <div id="model-list" class="checkbox-container"></div>
         
         <button onclick="addVideo()">ဇာတ်ကား သိမ်းမယ်</button>
     </div>
 
     <script>
-        // Category တွေကို Dropdown ထဲ ဆွဲထည့်တာ
+        // Category တွေကို Checkbox အနေနဲ့ ဆွဲထည့်တာ
         async function loadCategories() {
             try {
                 const res = await fetch(`${API_URL}/api/categories`);
                 const cats = await res.json();
-                const select = document.getElementById('videoCat');
-                select.innerHTML = '<option value="">Category ရွေးပါ...</option>';
+                const container = document.getElementById('cat-list');
+                container.innerHTML = '';
+                
                 cats.forEach(c => {
-                    select.innerHTML += `<option value="${c.id}">${c.name} (ID: ${c.id})</option>`;
+                    container.innerHTML += `
+                        <label class="checkbox-item">
+                            <input type="checkbox" value="${c.id}" class="cat-checkbox"> ${c.name}
+                        </label>
+                    `;
                 });
-            } catch(e) {
-                console.log("Category ဆွဲမရပါ", e);
+            } catch(e) { console.log("Error", e); }
+        }
+
+        // မော်ဒယ်တွေကို Checkbox အနေနဲ့ ဆွဲထည့်တာ
+        async function loadModels() {
+            try {
+                const res = await fetch(`${API_URL}/api/models`);
+                const models = await res.json();
+                const container = document.getElementById('model-list');
+                container.innerHTML = '';
+                
+                models.forEach(m => {
+                    container.innerHTML += `
+                        <label class="checkbox-item">
+                            <input type="checkbox" value="${m.id}" class="model-checkbox"> ${m.name}
+                        </label>
+                    `;
+                });
+            } catch(e) { console.log("Error", e); }
+        }
+
+        // စာရိုက်ရှာတဲ့ Function (Checkbox တွေကို ဖျောက်/ပြ)
+        function filterCheckboxes(inputId, containerId) {
+            const filter = document.getElementById(inputId).value.toLowerCase();
+            const items = document.getElementById(containerId).getElementsByClassName('checkbox-item');
+            
+            for (let i = 0; i < items.length; i++) {
+                const text = items[i].textContent.toLowerCase();
+                if (text.includes(filter)) {
+                    items[i].style.display = "flex";
+                } else {
+                    items[i].style.display = "none";
+                }
             }
         }
 
@@ -85,44 +133,72 @@
             
             if(res.ok) {
                 alert("Category သိမ်းပြီးပါပြီ");
-                loadCategories(); // Dropdown ကို update လုပ်မယ်
+                loadCategories(); 
             } else {
                 alert("Error တက်နေပါတယ်");
             }
         }
 
-        // ၂။ မော်ဒယ် သိမ်းတာ
+        // ၂။ မော်ဒယ် သိမ်းတာ (is_vip မပါတော့ပါ)
         async function addModel() {
             const name = document.getElementById('modelName').value;
             const image = document.getElementById('modelImage').value;
-            const is_vip = document.getElementById('modelVip').value;
 
             const res = await fetch(`${API_URL}/api/admin/add-model`, {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ name, image, is_vip })
+                body: JSON.stringify({ name, image }) // is_vip ဖျက်ထားပါတယ်
             });
-            alert(res.ok ? "မော်ဒယ် သိမ်းပြီးပါပြီ" : "Error တက်နေပါတယ်");
+            if(res.ok) {
+                alert("မော်ဒယ် သိမ်းပြီးပါပြီ");
+                loadModels(); 
+            } else {
+                alert("Error တက်နေပါတယ်");
+            }
         }
 
-        // ၃။ ဇာတ်ကား သိမ်းတာ
+        // ၃။ ဇာတ်ကား သိမ်းတာ (is_vip အသစ်ပါလာပါပြီ)
         async function addVideo() {
             const title = document.getElementById('videoTitle').value;
             const preview_url = document.getElementById('videoThumb').value;
             const file_id = document.getElementById('videoFileId').value;
-            const category_id = document.getElementById('videoCat').value;
-            const model_ids = document.getElementById('videoModels').value.split(',').map(id => parseInt(id.trim()));
+            const is_vip = document.getElementById('videoVip').value; // 🔴 VIP/Free ယူမယ်
+
+            const checkedCats = document.querySelectorAll('.cat-checkbox:checked');
+            const category_ids = Array.from(checkedCats).map(cb => parseInt(cb.value));
+
+            const checkedModels = document.querySelectorAll('.model-checkbox:checked');
+            const model_ids = Array.from(checkedModels).map(cb => parseInt(cb.value));
+
+            if(category_ids.length === 0) {
+                alert("Category အနည်းဆုံး တစ်ခု ရွေးပါ");
+                return;
+            }
 
             const res = await fetch(`${API_URL}/api/admin/add-video`, {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ title, thumbnail, file_id, category_id, model_ids })
+                // is_vip ကို ပါ ထည့်ပို့မယ်
+                body: JSON.stringify({ title, preview_url, file_id, category_ids, model_ids, is_vip })
             });
-            alert(res.ok ? "ဇာတ်ကား သိမ်းပြီးပါပြီ" : "Error တက်နေပါတယ်");
+            
+            if(res.ok) {
+                alert("ဇာတ်ကား သိမ်းပြီးပါပြီ");
+                // Form ကို ရှင်းမယ်
+                document.getElementById('videoTitle').value = '';
+                document.getElementById('videoThumb').value = '';
+                document.getElementById('videoFileId').value = '';
+                document.getElementById('videoVip').value = '0';
+                document.querySelectorAll('.cat-checkbox:checked').forEach(cb => cb.checked = false);
+                document.querySelectorAll('.model-checkbox:checked').forEach(cb => cb.checked = false);
+            } else {
+                alert("Error တက်နေပါတယ်");
+            }
         }
 
-        // စာမျက်နှာ စတင်တာနဲ့ Category တွေ ဆွဲထုတ်မယ်
+        // စာမျက်နှာ စတင်တာနဲ့ အကုန်ခေါ်မယ်
         loadCategories();
+        loadModels();
     </script>
 </body>
 </html>
