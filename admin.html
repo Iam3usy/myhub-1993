@@ -32,12 +32,11 @@
         <button onclick="addCategory()">Category သိမ်းမယ်</button>
     </div>
 
-    <!-- ၂။ မော်ဒယ် အသစ်ထည့်ရန် (VIP ရွေးတာ ဖျက်ထားပါတယ်) -->
+    <!-- ၂။ မော်ဒယ် အသစ်ထည့်ရန် -->
     <div class="box">
         <h3>မော်ဒယ် အသစ်ထည့်ရန်</h3>
         <input type="text" id="modelName" placeholder="မော်ဒယ် နာမည်">
         <input type="text" id="modelImage" placeholder="ပုံ Link (URL)">
-        <!-- <select id="modelVip"> ... ဖျက်လိုက်ပါပြီ ... </select> -->
         <button onclick="addModel()">မော်ဒယ် သိမ်းမယ်</button>
     </div>
 
@@ -48,7 +47,7 @@
         <input type="text" id="videoThumb" placeholder="Preview MP4 URL">
         <input type="text" id="videoFileId" placeholder="Telegram File ID">
         
-        <!-- 🔴 ဇာတ်ကား VIP/Free ရွေးတဲ့နေရာ (ဒါကို အသစ်ထည့်ထားပါတယ်) -->
+        <!-- ဇာတ်ကား VIP/Free ရွေးတဲ့နေရာ -->
         <label style="display: block; font-weight: bold; color: #ff0050;">အမျိုးအစား (VIP / Free)</label>
         <select id="videoVip" style="width: 100%; padding: 12px; margin: 5px 0 15px; border-radius: 5px; border: 1px solid #444; background: #1e1e1e; color: white;">
             <option value="0">အခမဲ့ (Free)</option>
@@ -66,6 +65,15 @@
         <div id="model-list" class="checkbox-container"></div>
         
         <button onclick="addVideo()">ဇာတ်ကား သိမ်းမယ်</button>
+    </div>
+
+    <!-- ၄။ User (VIP Key) အသစ်ထည့်ရန် -->
+    <div class="box">
+        <h3>User / VIP Key အသစ်ထည့်ရန်</h3>
+        <input type="text" id="userName" placeholder="Username (ဥပမာ - user123)">
+        <input type="text" id="userKey" placeholder="VIP Key (ဥပမာ - 123456)">
+        <input type="date" id="userExpired" placeholder="Expired Date">
+        <button onclick="addUser()">User သိမ်းမယ်</button>
     </div>
 
     <script>
@@ -133,36 +141,41 @@
             
             if(res.ok) {
                 alert("Category သိမ်းပြီးပါပြီ");
+                document.getElementById('catName').value = ''; 
+                document.getElementById('catImage').value = '';
                 loadCategories(); 
             } else {
-                alert("Error တက်နေပါတယ်");
+                alert("ဒီ Category နာမည် ရှိပြီးသား ဖြစ်နေပါတယ်။ တခြားနာမည် သုံးပါ။");
             }
         }
 
-        // ၂။ မော်ဒယ် သိမ်းတာ (is_vip မပါတော့ပါ)
+        // ၂။ မော်ဒယ် သိမ်းတာ
         async function addModel() {
             const name = document.getElementById('modelName').value;
             const image = document.getElementById('modelImage').value;
-
+            
             const res = await fetch(`${API_URL}/api/admin/add-model`, {
                 method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ name, image }) // is_vip ဖျက်ထားပါတယ်
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name, image })
             });
-            if(res.ok) {
+            
+            if (res.ok) {
                 alert("မော်ဒယ် သိမ်းပြီးပါပြီ");
-                loadModels(); 
+                document.getElementById('modelName').value = ''; 
+                document.getElementById('modelImage').value = '';
+                loadModels();
             } else {
-                alert("Error တက်နေပါတယ်");
+                alert("ဒီမော်ဒယ်နာမည် ရှိပြီးသား ဖြစ်နေပါတယ်။ တခြားနာမည် သုံးပါ။");
             }
         }
 
-        // ၃။ ဇာတ်ကား သိမ်းတာ (is_vip အသစ်ပါလာပါပြီ)
+        // ၃။ ဇာတ်ကား သိမ်းတာ
         async function addVideo() {
             const title = document.getElementById('videoTitle').value;
             const preview_url = document.getElementById('videoThumb').value;
             const file_id = document.getElementById('videoFileId').value;
-            const is_vip = document.getElementById('videoVip').value; // 🔴 VIP/Free ယူမယ်
+            const is_vip = document.getElementById('videoVip').value;
 
             const checkedCats = document.querySelectorAll('.cat-checkbox:checked');
             const category_ids = Array.from(checkedCats).map(cb => parseInt(cb.value));
@@ -178,13 +191,11 @@
             const res = await fetch(`${API_URL}/api/admin/add-video`, {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
-                // is_vip ကို ပါ ထည့်ပို့မယ်
                 body: JSON.stringify({ title, preview_url, file_id, category_ids, model_ids, is_vip })
             });
             
             if(res.ok) {
                 alert("ဇာတ်ကား သိမ်းပြီးပါပြီ");
-                // Form ကို ရှင်းမယ်
                 document.getElementById('videoTitle').value = '';
                 document.getElementById('videoThumb').value = '';
                 document.getElementById('videoFileId').value = '';
@@ -193,6 +204,33 @@
                 document.querySelectorAll('.model-checkbox:checked').forEach(cb => cb.checked = false);
             } else {
                 alert("Error တက်နေပါတယ်");
+            }
+        }
+
+        // ၄။ User သိမ်းတဲ့ Function (VIP Key)
+        async function addUser() {
+            const username = document.getElementById('userName').value;
+            const key_code = document.getElementById('userKey').value;
+            const expired_date = document.getElementById('userExpired').value;
+
+            if(!username || !key_code || !expired_date) {
+                alert("အချက်အလက်များ ပြည့်စုံအောင် ဖြည့်ပါ");
+                return;
+            }
+
+            const res = await fetch(`${API_URL}/api/admin/add-user`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ username, key_code, expired_date })
+            });
+            
+            if(res.ok) {
+                alert("User သိမ်းပြီးပါပြီ");
+                document.getElementById('userName').value = '';
+                document.getElementById('userKey').value = '';
+                document.getElementById('userExpired').value = '';
+            } else {
+                alert("Error တက်နေပါတယ် (Username ရှိပြီးသား ဖြစ်နိုင်ပါတယ်)");
             }
         }
 
