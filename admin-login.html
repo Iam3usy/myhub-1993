@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="my">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Admin Panel</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Padauk:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    
+    <style>
+        /* Admin Page အတွက် သီးသန့် Style များ */
+        body { padding-bottom: 50px; }
+        .admin-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .admin-header h1 { color: var(--primary); font-size: 24px; }
+        .btn-logout { background: #ff3333; color: white; border: none; padding: 8px 15px; border-radius: 8px; font-weight: bold; cursor: pointer; font-family: 'Padauk'; }
+        
+        /* Tabs */
+        .tabs { display: flex; gap: 10px; margin-bottom: 20px; overflow-x: auto; padding-bottom: 5px; }
+        .tabs::-webkit-scrollbar { display: none; }
+        .tab-btn { padding: 10px 20px; background: var(--nav-bg); border: 1px solid var(--border-color); color: var(--text-muted); border-radius: 10px; cursor: pointer; white-space: nowrap; font-weight: bold; font-family: 'Padauk'; transition: 0.3s; }
+        .tab-btn.active { background: var(--primary); border-color: var(--primary); color: white; }
+        
+        .tab-content { display: none; animation: fadeIn 0.3s; }
+        .tab-content.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        
+        /* Form Box */
+        .admin-form { background: var(--bg-surface); padding: 20px; border-radius: 15px; border: 1px solid var(--border-color); margin-bottom: 20px; }
+        .admin-form h3 { margin-bottom: 15px; color: var(--text-main); font-size: 18px; }
+        .admin-form input, .admin-form select { width: 100%; padding: 12px; margin-bottom: 12px; background: rgba(0,0,0,0.5); border: 1px solid var(--border-color); color: white; border-radius: 8px; font-family: 'Padauk'; }
+        .admin-form input:focus, .admin-form select:focus { outline: none; border-color: var(--primary); }
+        .admin-form label { display: flex; align-items: center; gap: 10px; color: var(--text-main); margin-bottom: 15px; font-weight: bold; }
+        .admin-form input[type="checkbox"] { width: auto; margin: 0; }
+        
+        .btn-save { width: 100%; padding: 12px; background: linear-gradient(135deg, #ff0050, #ff4d80); color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-family: 'Padauk'; font-size: 16px; }
+        .btn-cancel { width: 100%; padding: 12px; background: #444; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; margin-top: 10px; font-family: 'Padauk'; display: none; }
+        
+        /* List Items */
+        .admin-list { display: flex; flex-direction: column; gap: 10px; }
+        .admin-item { display: flex; justify-content: space-between; align-items: center; padding: 12px; background: var(--nav-bg); border: 1px solid var(--border-color); border-radius: 10px; }
+        .admin-item-info { flex: 1; overflow: hidden; }
+        .admin-item-info h4 { margin: 0 0 5px 0; font-size: 15px; color: var(--text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .admin-item-info p { margin: 0; font-size: 12px; color: var(--text-muted); }
+        .admin-actions { display: flex; gap: 8px; }
+        .btn-edit { background: #00d2ff; color: #000; padding: 6px 12px; border-radius: 6px; border: none; cursor: pointer; font-weight: bold; font-size: 12px; }
+        .btn-delete { background: #ff3333; color: white; padding: 6px 12px; border-radius: 6px; border: none; cursor: pointer; font-weight: bold; font-size: 12px; }
+        
+        /* Loading */
+        .loading { text-align: center; color: var(--primary); padding: 20px; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <div class="admin-header">
+            <h1>Admin Panel</h1>
+            <button class="btn-logout" onclick="adminLogout()">Logout</button>
+        </div>
+
+        <!-- Tabs -->
+        <div class="tabs">
+            <button class="tab-btn active" onclick="openTab('videoTab', event)">Videos</button>
+            <button class="tab-btn" onclick="openTab('modelTab', event)">Models</button>
+            <button class="tab-btn" onclick="openTab('categoryTab', event)">Categories</button>
+            <button class="tab-btn" onclick="openTab('userTab', event)">Users</button>
+        </div>
+
+        <!-- 🔴 1. VIDEO TAB -->
+        <div id="videoTab" class="tab-content active">
+            <div class="admin-form">
+                <h3 id="videoFormTitle">Add New Video</h3>
+                <input type="hidden" id="videoId">
+                <input type="text" id="vTitle" placeholder="Video Title">
+                <input type="text" id="vPreview" placeholder="Preview Image URL (optional)">
+                <input type="text" id="vFileId" placeholder="Telegram File ID (Required)">
+                
+                <label style="margin-bottom: 5px; font-size: 13px; color: var(--text-muted);">Category:</label>
+                <select id="vCategory"><option value="">Loading...</option></select>
+                
+                <label style="margin-bottom: 5px; font-size: 13px; color: var(--text-muted);">Model:</label>
+                <select id="vModel"><option value="">Loading...</option></select>
+                
+                <label>
+                    <input type="checkbox" id="vIsVip"> VIP Video?
+                </label>
+
+                <button class="btn-save" onclick="saveVideo()" id="vBtnSave">Save Video</button>
+                <button class="btn-cancel" onclick="resetVideoForm()" id="vBtnCancel">Cancel Edit</button>
+            </div>
+            <div class="admin-list" id="videoList"><div class="loading">Loading videos...</div></div>
+        </div>
+
+        <!-- 🔴 2. MODEL TAB -->
+        <div id="modelTab" class="tab-content">
+            <div class="admin-form">
+                <h3 id="modelFormTitle">Add New Model</h3>
+                <input type="hidden" id="modelId">
+                <input type="text" id="mName" placeholder="Model Name">
+                <input type="text" id="mImage" placeholder="Image URL">
+                <button class="btn-save" onclick="saveModel()" id="mBtnSave">Save Model</button>
+                <button class="btn-cancel" onclick="resetModelForm()" id="mBtnCancel">Cancel Edit</button>
+            </div>
+            <div class="admin-list" id="modelList"><div class="loading">Loading models...</div></div>
+        </div>
+
+        <!-- 🔴 3. CATEGORY TAB -->
+        <div id="categoryTab" class="tab-content">
+            <div class="admin-form">
+                <h3 id="catFormTitle">Add New Category</h3>
+                <input type="hidden" id="catId">
+                <input type="text" id="cName" placeholder="Category Name">
+                <input type="text" id="cImage" placeholder="Image URL">
+                <button class="btn-save" onclick="saveCategory()" id="cBtnSave">Save Category</button>
+                <button class="btn-cancel" onclick="resetCategoryForm()" id="cBtnCancel">Cancel Edit</button>
+            </div>
+            <div class="admin-list" id="categoryList"><div class="loading">Loading categories...</div></div>
+        </div>
+
+        <!-- 🔴 4. USER TAB -->
+        <div id="userTab" class="tab-content">
+            <div class="admin-form">
+                <h3 style="margin-bottom: 15px;">Add New User (VIP Key)</h3>
+                <input type="text" id="uName" placeholder="Username">
+                <input type="text" id="uKey" placeholder="Key Code (e.g. VIP-1234)">
+                <input type="date" id="uExpired" style="color: white;">
+                <button class="btn-save" onclick="saveUser()">Create User</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = "https://myhubapp.dathalay1.workers.dev";
+        let allModels = [];
+        let allCategories = [];
+        let allVideos = [];
+
+        // 🔴 Admin Login မဝင်ထားရင် Login Page ကို ပြန်ပို့မယ်
+        if(localStorage.getItem('admin_logged_in') !== 'true') {
+            window.location.href = 'admin-login.html';
+        }
+
+        // Logout
+        function adminLogout() {
+            localStorage.removeItem('admin_logged_in');
+            window.location.href = 'admin-login.html';
+        }
+
+        // Tabs အဖွင့်အပိတ်
+        function openTab(tabName, event) {
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById(tabName).classList.add('active');
+            if(event) event.target.classList.add('active');
+
+            if(tabName === 'videoTab') loadVideoData();
+            if(tabName === 'modelTab') loadModelData();
+            if(tabName === 'categoryTab') loadCategoryData();
+        }
+
+        // ==========================================
+        // 1. VIDEO FUNCTIONS
+        // ==========================================
+        async function loadVideoData() {
+            try {
+                const res = await fetch(`${API_URL}/api/videos`);
+                allVideos = await res.json();
+                
+                // Dropdown တွေ အတွက် Model & Category ဆွဲမယ်
+                const mRes = await fetch(`${API_URL}/api/models`);
+                allModels = await mRes.json();
+                const cRes = await fetch(`${API_URL}/api/categories`);
+                allCategories = await cRes.json();
+
+                document.getElementById('vModel').innerHTML = allModels.map(m => `<option value="${m.id}">${m.name}</option>`).join('');
+                document.getElementById('vCategory').innerHTML = allCategories.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+
+                // Video List ပြမယ်
+                const list = document.getElementById('videoList');
+                if(allVideos.length === 0) {
+                    list.innerHTML = '<div class="loading">No videos found.</div>';
+                    return;
+                }
+                list.innerHTML = allVideos.map(v => `
+                    <div class="admin-item">
+                        <div class="admin-item-info">
+                            <h4>${v.title}</h4>
+                            <p>ID: ${v.id} | ${v.is_vip == 1 ? '👑 VIP' : 'Free'} | Views: ${v.views || 0}</p>
+                        </div>
+                        <div class="admin-actions">
+                            <button class="btn-edit" onclick="editVideo(${v.id})">Edit</button>
+                            <button class="btn-delete" onclick="deleteVideo(${v.id})">Del</button>
+                        </div>
+                    </div>
+                `).join('');
+            } catch(e) { 
+                document.getElementById('videoList').innerHTML = '<div class="loading">Error loading data.</div>';
+            }
+        }
+
+        function editVideo(id) {
+            const v = allVideos.find(x => x.id === id);
+            document.getElementById('videoId').value = v.id;
+            document.getElementById('vTitle').value = v.title;
+            document.getElementById('vPreview').value = v.preview_url || '';
+            document.getElementById('vFileId').value = v.file_id;
+            document.getElementById('vIsVip').checked = v.is_vip == 1;
+            
+            document.getElementById('videoFormTitle').innerText = "Edit Video";
+            document.getElementById('vBtnCancel').style.display = 'block';
+            window.scrollTo(0,0);
+        }
+
+        function resetVideoForm() {
+            document.getElementById('videoId').value = '';
+            document.getElementById('vTitle').value = '';
+            document.getElementById('vPreview').value = '';
+            document.getElementById('vFileId').value = '';
+            document.getElementById('vIsVip').checked = false;
+            document.getElementById('videoFormTitle').innerText = "Add New Video";
+            document.getElementById('vBtnCancel').style.display = 'none';
+        }
+
+        async function saveVideo() {
+            const id = document.getElementById('videoId').value;
+            const title = document.getElementById('vTitle').value;
+            const preview = document.getElementById('vPreview').value;
+            const fileId = document.getElementById('vFileId').value;
+            const modelId = document.getElementById('vModel').value;
+            const catId = document.getElementById('vCategory').value;
+            const isVip = document.getElementById('vIsVip').checked ? 1 : 0;
+
+            if(!title || !fileId) return alert("Title နဲ့ File ID ဖြည့်ပါ");
+
+            const payload = {
+                title: title, preview_url: preview, file_id: fileId, 
+                model_ids: [parseInt(modelId)], category_ids: [parseInt(catId)], is_vip: isVip
+            };
+
+            if(id) payload.id = id; 
+
+            const endpoint = id ? '/api/admin/edit-video' : '/api/admin/add-video';
+            
+            try {
+                const res = await fetch(`${API_URL}${endpoint}`, {
+                    method: 'POST',
+                    headers: {'Content-Type':'application/json'},
+                    body: JSON.stringify(payload)
+                });
+                if(res.ok) { alert("Saved Successfully!"); resetVideoForm(); loadVideoData(); }
+                else alert("Error: API returned an error.");
+            } catch(e) { alert("Network Error"); }
+        }
+
+        async function deleteVideo(id) {
+            if(!confirm("ဒီဗီဒီယိုကို ဖျက်မှာသေချာလား?")) return;
+            try {
+                const res = await fetch(`${API_URL}/api/admin/delete-video`, {
+                    method: 'POST', headers: {'Content-Type':'application/json'},
+                    body: JSON.stringify({ id })
+                });
+                if(res.ok) { alert("Deleted!"); loadVideoData(); }
+            } catch(e) { alert("Error"); }
+        }
+
+        // ==========================================
+        // 2. MODEL FUNCTIONS
+        // ==========================================
+        async function loadModelData() {
+            try {
+                const res = await fetch(`${API_URL}/api/models`);
+                allModels = await res.json();
+                const list = document.getElementById('modelList');
+                if(allModels.length === 0) { list.innerHTML = '<div class="loading">No models found.</div>'; return; }
+                
+                list.innerHTML = allModels.map(m => `
+                    <div class="admin-item">
+                        <div class="admin-item-info">
+                            <h4>${m.name}</h4>
+                            <p>ID: ${m.id} | Videos: ${m.video_count || 0}</p>
+                        </div>
+                        <div class="admin-actions">
+                            <button class="btn-edit" onclick="editModel(${m.id})">Edit</button>
+                            <button class="btn-delete" onclick="deleteModel(${m.id})">Del</button>
+                        </div>
+                    </div>
+                `).join('');
+            } catch(e) { document.getElementById('modelList').innerHTML = '<div class="loading">Error loading.</div>'; }
+        }
+
+        function editModel(id) {
+            const m = allModels.find(x => x.id === id);
+            document.getElementById('modelId').value = m.id;
+            document.getElementById('mName').value = m.name;
+            document.getElementById('mImage').value = m.image || '';
+            document.getElementById('modelFormTitle').innerText = "Edit Model";
+            document.getElementById('mBtnCancel').style.display = 'block';
+            window.scrollTo(0,0);
+        }
+
+        function resetModelForm() {
+            document.getElementById('modelId').value = '';
+            document.getElementById('mName').value = '';
+            document.getElementById('mImage').value = '';
+            document.getElementById('modelFormTitle').innerText = "Add New Model";
+            document.getElementById('mBtnCancel').style.display = 'none';
+        }
+
+        async function saveModel() {
+            const id = document.getElementById('modelId').value;
+            const name = document.getElementById('mName').value;
+            const image = document.getElementById('mImage').value;
+            if(!name) return alert("Name ဖြည့်ပါ");
+
+            const endpoint = id ? '/api/admin/edit-model' : '/api/admin/add-model';
+            const payload = id ? { id, name, image } : { name, image };
+
+            try {
+                const res = await fetch(`${API_URL}${endpoint}`, {
+                    method: 'POST', headers: {'Content-Type':'application/json'},
+                    body: JSON.stringify(payload)
+                });
+                if(res.ok) { alert("Saved!"); resetModelForm(); loadModelData(); }
+            } catch(e) { alert("Error"); }
+        }
+
+        async function deleteModel(id) {
+            if(!confirm("ဒီမော်ဒယ်ကို ဖျက်မှာသေချာလား?")) return;
+            try {
+                const res = await fetch(`${API_URL}/api/admin/delete-model`, {
+                    method: 'POST', headers: {'Content-Type':'application/json'},
+                    body: JSON.stringify({ id })
+                });
+                if(res.ok) { alert("Deleted!"); loadModelData(); }
+            } catch(e) { alert("Error"); }
+        }
+
+        // ==========================================
+        // 3. CATEGORY FUNCTIONS
+        // ==========================================
+        async function loadCategoryData() {
+            try {
+                const res = await fetch(`${API_URL}/api/categories`);
+                allCategories = await res.json();
+                const list = document.getElementById('categoryList');
+                if(allCategories.length === 0) { list.innerHTML = '<div class="loading">No categories found.</div>'; return; }
+                
+                list.innerHTML = allCategories.map(c => `
+                    <div class="admin-item">
+                        <div class="admin-item-info">
+                            <h4>${c.name}</h4>
+                            <p>ID: ${c.id} | Videos: ${c.video_count || 0}</p>
+                        </div>
+                        <div class="admin-actions">
+                            <button class="btn-edit" onclick="editCategory(${c.id})">Edit</button>
+                            <button class="btn-delete" onclick="deleteCategory(${c.id})">Del</button>
+                        </div>
+                    </div>
+                `).join('');
+            } catch(e) { document.getElementById('categoryList').innerHTML = '<div class="loading">Error loading.</div>'; }
+        }
+
+        function editCategory(id) {
+            const c = allCategories.find(x => x.id === id);
+            document.getElementById('catId').value = c.id;
+            document.getElementById('cName').value = c.name;
+            document.getElementById('cImage').value = c.image || '';
+            document.getElementById('catFormTitle').innerText = "Edit Category";
+            document.getElementById('cBtnCancel').style.display = 'block';
+            window.scrollTo(0,0);
+        }
+
+        function resetCategoryForm() {
+            document.getElementById('catId').value = '';
+            document.getElementById('cName').value = '';
+            document.getElementById('cImage').value = '';
+            document.getElementById('catFormTitle').innerText = "Add New Category";
+            document.getElementById('cBtnCancel').style.display = 'none';
+        }
+
+        async function saveCategory() {
+            const id = document.getElementById('catId').value;
+            const name = document.getElementById('
