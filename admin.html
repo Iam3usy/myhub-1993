@@ -70,11 +70,11 @@
                 <input type="text" id="vPreview" placeholder="Preview Image URL (optional)">
                 <input type="text" id="vFileId" placeholder="Telegram File ID (Required)">
                 
-                <label style="margin-bottom: 5px; font-size: 13px; color: #aaa;">Category:</label>
-                <select id="vCategory"><option value="">Loading...</option></select>
-                
-                <label style="margin-bottom: 5px; font-size: 13px; color: #aaa;">Model:</label>
-                <select id="vModel"><option value="">Loading...</option></select>
+                                <label style="margin-bottom: 5px; font-size: 13px; color: #ff0050;">Category:</label>
+                <select id="vCategory" multiple style="height: 120px;"><option value="">Loading...</option></select>
+
+                <label style="margin-bottom: 5px; font-size: 13px; color: #ff0050;">Model :</label>
+                <select id="vModel" multiple style="height: 120px;"><option value="">Loading...</option></select>
                 
                 <label><input type="checkbox" id="vIsVip"> VIP Video?</label>
 
@@ -210,31 +210,36 @@
         }
 
         async function saveVideo() {
-            const id = document.getElementById('videoId').value;
-            const title = document.getElementById('vTitle').value;
-            const preview = document.getElementById('vPreview').value;
-            const fileId = document.getElementById('vFileId').value;
-            const modelId = document.getElementById('vModel').value;
-            const catId = document.getElementById('vCategory').value;
-            const isVip = document.getElementById('vIsVip').checked ? 1 : 0;
+    const id = document.getElementById('videoId').value;
+    const title = document.getElementById('vTitle').value;
+    const preview = document.getElementById('vPreview').value;
+    const fileId = document.getElementById('vFileId').value;
+    const isVip = document.getElementById('vIsVip').checked ? 1 : 0;
 
-            if(!title || !fileId) return alert("Title & File ID ဖြည့်ပါ");
+    // 🔴 ရွေးထားတဲ့ ID အားလုံးကို Array အနေနဲ့ ယူမယ်
+    const selectedModels = Array.from(document.getElementById('vModel').selectedOptions).map(opt => parseInt(opt.value));
+    const selectedCategories = Array.from(document.getElementById('vCategory').selectedOptions).map(opt => parseInt(opt.value));
 
-            const payload = {
-                title: title, preview_url: preview, file_id: fileId, 
-                model_ids: [parseInt(modelId)], category_ids: [parseInt(catId)], is_vip: isVip
-            };
-            if(id) payload.id = id; 
-            const endpoint = id ? '/api/admin/edit-video' : '/api/admin/add-video';
-            
-            try {
-                const res = await fetch(`${API_URL}${endpoint}`, {
-                    method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload)
-                });
-                if(res.ok) { alert("Saved!"); resetVideoForm(); loadVideoData(); }
-                else alert("Error");
-            } catch(e) { alert("Network Error"); }
-        }
+    if(!title || !fileId) return alert("Title & File ID ဖြည့်ပါ");
+    if(selectedModels.length === 0 || selectedCategories.length === 0) return alert("Category နဲ့ Model ကို အနည်းဆုံး တစ်ခုရွေးပါ");
+
+    const payload = {
+        title: title, preview_url: preview, file_id: fileId, 
+        model_ids: selectedModels, 
+        category_ids: selectedCategories, 
+        is_vip: isVip
+    };
+    if(id) payload.id = id; 
+    const endpoint = id ? '/api/admin/edit-video' : '/api/admin/add-video';
+    
+    try {
+        const res = await fetch(`${API_URL}${endpoint}`, {
+            method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload)
+        });
+        if(res.ok) { alert("Saved!"); resetVideoForm(); loadVideoData(); }
+        else alert("Error: API က လက်မခံပါဘူး");
+    } catch(e) { alert("Network Error"); }
+}
 
         async function deleteVideo(id) {
             if(!confirm("ဖျက်မှာသေချာလား?")) return;
