@@ -94,6 +94,11 @@
                 <input type="text" id="vTitle" placeholder="Video Title">
                 <input type="text" id="vPreview" placeholder="Preview Image URL (optional)">
                 <input type="text" id="vFileId" placeholder="Telegram File ID (Required)">
+                <label style="margin-bottom: 5px; font-size: 13px; color: #ff0050;">Stream Worker ရွေးပါ:</label>
+                <select id="vWorker">
+                    <option value="1">Worker 1 </option>
+                    <option value="2">Worker 2 </option>
+                </select>
                 
                 <label style="margin-bottom: 5px; font-size: 13px; color: #aaa;">Category :</label>
                 <select id="vCategory" multiple style="height: 100px;"><option value="">Loading...</option></select>
@@ -218,6 +223,7 @@
             document.getElementById('vTitle').value = v.title;
             document.getElementById('vPreview').value = v.preview_url || '';
             document.getElementById('vFileId').value = v.file_id;
+            document.getElementById('vWorker').value = v.worker_id || 1;
             document.getElementById('vIsVip').checked = v.is_vip == 1;
             document.getElementById('videoFormTitle').innerText = "Edit Video";
             document.getElementById('vBtnCancel').style.display = 'block';
@@ -241,7 +247,7 @@
     const fileId = document.getElementById('vFileId').value;
     const isVip = document.getElementById('vIsVip').checked ? 1 : 0;
 
-    // 🔴 ရွေးထားတဲ့ ID တွေကို Array အနေနဲ့ ယူမယ်
+    const workerId = document.getElementById('vWorker').value; 
     const selectedModels = Array.from(document.getElementById('vModel').selectedOptions).map(opt => parseInt(opt.value));
     const selectedCategories = Array.from(document.getElementById('vCategory').selectedOptions).map(opt => parseInt(opt.value));
 
@@ -249,11 +255,12 @@
     if(selectedModels.length === 0 || selectedCategories.length === 0) return alert("Category နဲ့ Model ကို အနည်းဆုံး တစ်ခုရွေးပါ");
 
     const payload = {
-        title: title, preview_url: preview, file_id: fileId, 
-        model_ids: selectedModels, 
-        category_ids: selectedCategories, 
-        is_vip: isVip
-    };
+    title: title, preview_url: preview, file_id: fileId, 
+    model_ids: selectedModels, 
+    category_ids: selectedCategories, 
+    is_vip: isVip,
+    worker_id: parseInt(workerId)
+};
     if(id) payload.id = id; 
     const endpoint = id ? '/api/admin/edit-video' : '/api/admin/add-video';
     
